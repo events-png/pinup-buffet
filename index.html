@@ -1,648 +1,170 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <title>pin-up | Buffetauswahl</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
-      color: #222;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    #kopfbereich {
-      flex-shrink: 0;
-      width: 100%;
-      padding: 10px 20px;
-      background: #ffffff;
-      border-bottom: 3px solid #fbbf24;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      z-index: 1000;
-      overflow: visible;
-    }
-
-    #kopfbereich h1 {
-      margin: 3px 0;
-      font-size: 24px;
-    
-    }
-
-    #kopfbereich p {
-      margin: 3px 0;
-    }
-
-    #veranstaltung h2 {
-      margin: 5px 0;
-      font-size: 20px;
-    }
-
-    #auswahlzaehler {
-      background: #fff8df;
-      padding: 8px 12px 10px;
-      margin: 8px auto 0;
-      border-radius: 8px;
-      max-width: 800px;
-      border: 1px solid #fbbf24;
-    }
-
-    #zaehlerinhalt {
-      margin-top: 5px;
-      line-height: 1.5;
-    }
-
-    #auswahlmengen {
-      margin-bottom: 5px;
-    }
-
-    #preise {
-      padding-top: 5px;
-      border-top: 1px solid #e5c75c;
-    }
-
-    #gesamtpreis {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-   #speichern {
-  margin-top: 6px;
-  padding: 7px 18px;
-  border: none;
-  border-radius: 6px;
-  background: #fbbf24;
-  color: #222;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  display: inline-block;
-}
-
-    #speichern:hover {
-      filter: brightness(0.95);
-    }
-
-    #speichern:disabled {
-      opacity: 0.5;
-      cursor: wait;
-    }
-
-    #speicherstatus {
-      margin-top: 6px;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    #buffet {
-      flex: 1;
-      overflow-y: auto;
-      width: 100%;
-      max-width: 850px;
-      margin: 0 auto;
-      padding: 5px 25px 50px;
-    }
-
-    #buffet h3 {
-      margin-top: 20px;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #fbbf24;
-      padding-bottom: 8px;
-    }
-
-    #buffet h3:first-child {
-      margin-top: 10px;
-    }
-
-    label {
-      display: block;
-      padding: 12px;
-      margin: 8px 0;
-      background: white;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1px solid #e5e5e5;
-    }
-
-    label:hover {
-      background: #fff8df;
-    }
-
-    input[type="checkbox"] {
-      margin-right: 10px;
-      transform: scale(1.2);
-    }
-
-    @media (max-width: 600px) {
-      #kopfbereich {
-        padding: 8px;
-      }
-
-      #kopfbereich h1 {
-        font-size: 19px;
-      }
-
-      #veranstaltung h2 {
-        font-size: 16px;
-      }
-
-      #auswahlzaehler {
-        font-size: 12px;
-        padding: 6px;
-      }
-
-      #gesamtpreis {
-        font-size: 15px;
-      }
-
-      #speichern {
-        padding: 7px 15px;
-        font-size: 13px;
-      }
-
-      #buffet {
-        padding: 5px 12px 40px;
-      }
-    }
+    *{box-sizing:border-box} body{font-family:Arial,sans-serif;margin:0;background:#f7f7f7;color:#222}
+    header{position:sticky;top:0;background:#fff;border-bottom:3px solid #fbbf24;padding:10px 18px;text-align:center;z-index:5;box-shadow:0 2px 8px #0001}
+    h1{margin:2px 0;font-size:24px} #veranstaltung h2{margin:5px 0;font-size:20px}
+    #auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px auto 0;border-radius:8px;max-width:850px;border:1px solid #fbbf24;line-height:1.45}
+    #preise{padding-top:5px;margin-top:5px;border-top:1px solid #e5c75c}
+    #speichern{margin-top:7px;padding:8px 18px;border:0;border-radius:6px;background:#fbbf24;font-weight:bold;cursor:pointer}
+    #speichern:disabled{opacity:.5} #speicherstatus{margin-top:6px;font-weight:bold}
+    main{max-width:850px;margin:auto;padding:8px 20px 50px} h3{margin:22px 0 8px;border-bottom:2px solid #fbbf24;padding-bottom:7px}
+    label.item{display:flex;align-items:center;gap:10px;padding:11px;margin:7px 0;background:#fff;border:1px solid #e5e5e5;border-radius:6px}
+    label.item:hover{background:#fff8df} input[type=checkbox]{transform:scale(1.2)}
+    input.menge{width:85px;padding:7px;border:1px solid #bbb;border-radius:5px;margin-left:auto}
+    @media(max-width:600px){h1{font-size:19px}#veranstaltung h2{font-size:16px}header{padding:7px}#auswahlzaehler{font-size:12px}main{padding:5px 12px 40px}}
   </style>
 </head>
-
 <body>
-
-  <header id="kopfbereich">
-
-    <h1>pin-up Buffetauswahl</h1>
-
-    <p id="meldung">
-      Veranstaltung wird geladen ...
-    </p>
-
-    <div id="veranstaltung"></div>
-
-    <div id="auswahlzaehler" hidden>
-
-      <strong>Ihre Auswahl</strong>
-
-      <div id="zaehlerinhalt">
-
-        <div id="auswahlmengen"></div>
-
-        <div id="preise"></div>
-
-      </div>
-
-      <button id="speichern" onclick="speichereAuswahl()">
-        Auswahl speichern
-      </button>
-
-      <div id="speicherstatus"></div>
-
-    </div>
-
-  </header>
-
-  <main id="buffet"></main>
-
-  <script>
-
-    const SUPABASE_URL =
-      "https://gfhvecfpdfftfkidlfjc.supabase.co";
-
-    const SUPABASE_KEY =
-      "sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft";
-
-    const db = supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
-
-    let gaestezahl = 0;
-    let auswahlGeschlossen = false;
-
-    const token = new URLSearchParams(
-      window.location.search
-    ).get("token");
-
-
-    async function ladeVeranstaltung() {
-
-      const meldung =
-        document.getElementById("meldung");
-
-      if (!token) {
-        meldung.textContent =
-          "Kein Veranstaltungslink angegeben.";
-        return false;
-      }
-
-      const { data, error } = await db.rpc(
-        "get_event_by_token",
-        {
-          p_token: token
-        }
-      );
-
-      if (error || !data || data.length === 0) {
-        meldung.textContent =
-          "Veranstaltung nicht gefunden.";
-        return false;
-      }
-
-      const event = data[0];
-
-      gaestezahl =
-        Number(event.guest_count) || 0;
-
-      const heute = new Date();
-      const heuteIso =
-        heute.getFullYear() + "-" +
-        String(heute.getMonth() + 1).padStart(2, "0") + "-" +
-        String(heute.getDate()).padStart(2, "0");
-
-      auswahlGeschlossen =
-        event.status !== "open" ||
-        (event.buffet_deadline && event.buffet_deadline < heuteIso);
-
-      meldung.textContent =
-        "Ihre Veranstaltung:";
-
-      const titel =
-        document.createElement("h2");
-
-     const datumFormatieren = datum => {
-  if (!datum) return "-";
-
-  return new Date(datum + "T00:00:00")
-    .toLocaleDateString("de-DE");
-};
-
-titel.innerHTML = `
-  ${event.customer_name}
-  <div style="font-size:14px; font-weight:normal; margin-top:4px;">
-    Veranstaltung: ${datumFormatieren(event.event_date)}
-    &nbsp; | &nbsp;
-    Auswahl möglich bis: ${datumFormatieren(event.buffet_deadline)}
+<header>
+  <h1>pin-up Buffetauswahl</h1>
+  <p id="meldung">Veranstaltung wird geladen ...</p>
+  <div id="veranstaltung"></div>
+  <div id="auswahlzaehler" hidden>
+    <strong>Ihre Auswahl</strong>
+    <div id="auswahlmengen"></div>
+    <div id="preise"></div>
+    <button id="speichern" onclick="speichereAuswahl()">Auswahl speichern</button>
+    <div id="speicherstatus"></div>
   </div>
-`;
-
-      document
-        .getElementById("veranstaltung")
-        .appendChild(titel);
-
-      return true;
-    }
-
-
-    async function ladeBuffet() {
-
-      const { data, error } = await db.rpc(
-        "get_buffet_items"
-      );
-
-      if (error) {
-        alert("Buffet konnte nicht geladen werden.");
-        return;
-      }
-
-      const bereich =
-        document.getElementById("buffet");
-
-      bereich.replaceChildren();
-
-      const kategorien = [
-        "Vorspeise",
-        "Hauptspeise",
-        "Beilage",
-        "Dessert"
-      ];
-
-      for (const kategorie of kategorien) {
-
-        const titel =
-          document.createElement("h3");
-
-        titel.textContent = kategorie;
-
-        bereich.appendChild(titel);
-
-        const gerichte = data.filter(
-          item =>
-            item.category
-              ?.trim()
-              .toLowerCase()
-            ===
-            kategorie.toLowerCase()
-        );
-
-        gerichte.forEach(item => {
-
-          const zeile =
-            document.createElement("label");
-
-          const checkbox =
-            document.createElement("input");
-
-          checkbox.type = "checkbox";
-          checkbox.value = item.id;
-          checkbox.className = "buffet-auswahl";
-
-          checkbox.dataset.category =
-            item.category.trim().toLowerCase();
-
-          checkbox.addEventListener(
-            "change",
-            () => {
-              aktualisiereAuswahl();
-
-              document.getElementById(
-                "speicherstatus"
-              ).textContent = "";
-            }
-          );
-
-          zeile.appendChild(checkbox);
-
-          let name = item.name;
-
-          if (item.vegan === true &&
-              !name.includes("(V)")) {
-            name += " (V)";
-          }
-
-          zeile.appendChild(
-            document.createTextNode(" " + name)
-          );
-
-          bereich.appendChild(zeile);
-        });
-      }
-
-      await ladeGespeicherteAuswahl();
-
-      document
-        .getElementById("auswahlzaehler")
-        .hidden = false;
-
-      aktualisiereAuswahl();
-
-      if (auswahlGeschlossen) {
-        document
-          .querySelectorAll(".buffet-auswahl")
-          .forEach(checkbox => {
-            checkbox.disabled = true;
-          });
-
-        const speichern =
-          document.getElementById("speichern");
-
-        speichern.disabled = true;
-        speichern.style.display = "none";
-
-        document.getElementById(
-          "speicherstatus"
-        ).textContent =
-          "Die Auswahlfrist ist abgelaufen. Änderungen sind nicht mehr möglich.";
-      }
-    }
-
-
-    async function ladeGespeicherteAuswahl() {
-
-      const { data, error } = await db.rpc(
-        "get_buffet_selection",
-        {
-          p_token: token
-        }
-      );
-
-      if (error || !data) {
-        return;
-      }
-
-      const gespeicherteIds =
-        data.map(
-          eintrag =>
-            Number(eintrag.buffet_item_id)
-        );
-
-      document
-        .querySelectorAll(".buffet-auswahl")
-        .forEach(checkbox => {
-
-          checkbox.checked =
-            gespeicherteIds.includes(
-              Number(checkbox.value)
-            );
-
-        });
-
-      if (gespeicherteIds.length > 0) {
-
-        document.getElementById(
-          "speicherstatus"
-        ).textContent =
-          "Gespeicherte Auswahl geladen.";
-      }
-    }
-
-
-    function aktualisiereAuswahl() {
-
-      const auswahl =
-        document.querySelectorAll(
-          ".buffet-auswahl:checked"
-        );
-
-      const anzahl = {
-        vorspeise: 0,
-        hauptspeise: 0,
-        beilage: 0,
-        dessert: 0
-      };
-
-      auswahl.forEach(item => {
-
-        const kategorie =
-          item.dataset.category;
-
-        if (kategorie in anzahl) {
-          anzahl[kategorie]++;
-        }
-
-      });
-
-      const extraVorspeisen =
-        Math.max(0, anzahl.vorspeise - 4);
-
-      const extraHauptspeisen =
-        Math.max(0, anzahl.hauptspeise - 2);
-
-      const extraBeilagen =
-        Math.max(0, anzahl.beilage - 3);
-
-      const extraDesserts =
-        Math.max(0, anzahl.dessert - 1);
-
-      const aufpreis =
-        (extraVorspeisen * 5.00) +
-        (extraHauptspeisen * 6.50) +
-        (extraBeilagen * 5.00) +
-        (extraDesserts * 5.00);
-
-      const grundpreis = 31.50;
-
-      const preisProPerson =
-        grundpreis + aufpreis;
-
-      const gesamtpreis =
-        preisProPerson * gaestezahl;
-
-      const euro = wert =>
-        wert.toLocaleString(
-          "de-DE",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }
-        ) + " €";
-
-    document.getElementById(
-  "auswahlmengen"
-).innerHTML = `
-  Vorspeisen:
-  <strong>${anzahl.vorspeise}</strong> von 4 inklusive
-  ${extraVorspeisen > 0
-    ? ` · <strong>+ ${euro(extraVorspeisen * 5)} p. P.</strong>`
-    : ""}
-  &nbsp; | &nbsp;
-
-  Hauptspeisen:
-  <strong>${anzahl.hauptspeise}</strong> von 2 inklusive
-  ${extraHauptspeisen > 0
-    ? ` · <strong>+ ${euro(extraHauptspeisen * 6.5)} p. P.</strong>`
-    : ""}
-  &nbsp; | &nbsp;
-
-  Beilagen:
-  <strong>${anzahl.beilage}</strong> von 3 inklusive
-  ${extraBeilagen > 0
-    ? ` · <strong>+ ${euro(extraBeilagen * 5)} p. P.</strong>`
-    : ""}
-  &nbsp; | &nbsp;
-
-  Desserts:
-  <strong>${anzahl.dessert}</strong> von 1 inklusive
-  ${extraDesserts > 0
-    ? ` · <strong>+ ${euro(extraDesserts * 5)} p. P.</strong>`
-    : ""}
-`;
-      let preisText = `
-        Grundpreis:
-        ${euro(grundpreis)}
-        pro Person
-      `;
-
-     
-
-      preisText += `
-        <br>
-
-        Preis pro Person:
-        <strong>
-          ${euro(preisProPerson)}
-        </strong>
-
-        &nbsp; | &nbsp;
-
-        ${gaestezahl} Personen:
-
-        <span id="gesamtpreis">
-          ${euro(gesamtpreis)}
-        </span>
-      `;
-
-      document.getElementById(
-        "preise"
-      ).innerHTML = preisText;
-    }
-
-
-    async function speichereAuswahl() {
-
-      const button =
-        document.getElementById("speichern");
-
-      const status =
-        document.getElementById("speicherstatus");
-
-      const ausgewaehlt =
-        document.querySelectorAll(
-          ".buffet-auswahl:checked"
-        );
-
-      const itemIds =
-        Array.from(ausgewaehlt)
-          .map(item => Number(item.value));
-
-      button.disabled = true;
-
-      status.textContent =
-        "Auswahl wird gespeichert ...";
-
-      const { error } = await db.rpc(
-        "submit_buffet_selection",
-        {
-          p_token: token,
-          p_item_ids: itemIds
-        }
-      );
-
-      button.disabled = false;
-
-      if (error) {
-
-        console.error(error);
-
-        status.textContent =
-          "Speichern nicht möglich.";
-
-        return;
-      }
-
-      status.textContent =
-        "✓ Auswahl wurde gespeichert.";
-    }
-
-
-    async function starten() {
-
-      const gefunden =
-        await ladeVeranstaltung();
-
-      if (gefunden) {
-        await ladeBuffet();
-      }
-    }
-
-    starten();
-
-  </script>
-
+</header>
+<main id="buffet"></main>
+<script>
+const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft");
+const token=new URLSearchParams(location.search).get("token");
+let eventData=null, items=[], geschlossen=false;
+
+const euro=v=>Number(v||0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const datum=d=>d?new Date(d+"T00:00:00").toLocaleDateString("de-DE"):"-";
+
+async function ladeVeranstaltung(){
+  if(!token){document.getElementById("meldung").textContent="Kein Veranstaltungslink angegeben.";return false}
+  const {data,error}=await db.rpc("get_event_by_token",{p_token:token});
+  if(error||!data?.length){document.getElementById("meldung").textContent="Veranstaltung nicht gefunden.";return false}
+  eventData=data[0];
+  const now=new Date(), today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  geschlossen=eventData.status!=="open"||(eventData.buffet_deadline&&eventData.buffet_deadline<today);
+  document.getElementById("meldung").textContent=eventData.buffet_name||"Ihre Veranstaltung";
+  const h=document.createElement("h2");
+  h.append(document.createTextNode(eventData.customer_name||"Veranstaltung"));
+  const sub=document.createElement("div"); sub.style.cssText="font-size:14px;font-weight:normal;margin-top:4px";
+  sub.textContent="Veranstaltung: "+datum(eventData.event_date)+" | Auswahl möglich bis: "+datum(eventData.buffet_deadline);
+  h.appendChild(sub); document.getElementById("veranstaltung").replaceChildren(h);
+  return true;
+}
+
+async function ladeBuffet(){
+  const {data,error}=await db.rpc("get_buffet_items_for_token",{p_token:token});
+  if(error){document.getElementById("meldung").textContent="Buffet konnte nicht geladen werden.";return}
+  items=data||[];
+  const main=document.getElementById("buffet"); main.replaceChildren();
+  if(eventData.selection_type==="quantity") baueMengenAuswahl(main); else baueNormaleAuswahl(main);
+  await ladeGespeichert();
+  document.getElementById("auswahlzaehler").hidden=false;
+  aktualisiere();
+  if(geschlossen){
+    document.querySelectorAll("input").forEach(x=>x.disabled=true);
+    document.getElementById("speichern").style.display="none";
+    document.getElementById("speicherstatus").textContent="Die Auswahlfrist ist abgelaufen. Änderungen sind nicht mehr möglich.";
+  }
+}
+
+function gruppiert(){
+  const m=new Map();
+  items.forEach(i=>{if(!m.has(i.category))m.set(i.category,[]);m.get(i.category).push(i)});
+  return m;
+}
+
+function titel(main,name){const h=document.createElement("h3");h.textContent=name;main.appendChild(h)}
+
+function baueNormaleAuswahl(main){
+  for(const [cat,list] of gruppiert()){
+    titel(main,cat);
+    list.forEach(item=>{
+      const l=document.createElement("label");l.className="item";
+      const cb=document.createElement("input");cb.type="checkbox";cb.value=item.id;cb.className="buffet-auswahl";cb.dataset.category=(item.category||"").toLowerCase();
+      cb.onchange=()=>{aktualisiere();document.getElementById("speicherstatus").textContent=""};
+      const span=document.createElement("span");span.textContent=item.name+(item.vegan&&!item.name.includes("(V)")?" (V)":"");
+      l.append(cb,span);main.appendChild(l);
+    });
+  }
+}
+
+function baueMengenAuswahl(main){
+  titel(main,"Fingerfood");
+  items.forEach(item=>{
+    const l=document.createElement("label");l.className="item";
+    const span=document.createElement("span");span.textContent=item.name;
+    const n=document.createElement("input");n.type="number";n.min="0";n.step="10";n.value="0";n.className="menge";n.dataset.id=item.id;
+    n.setAttribute("aria-label","Stückzahl "+item.name);
+    n.onchange=()=>{if(Number(n.value)>0&&Number(n.value)<Number(eventData.minimum_quantity_per_item||10))n.value=eventData.minimum_quantity_per_item||10;aktualisiere();document.getElementById("speicherstatus").textContent=""};
+    l.append(span,n);main.appendChild(l);
+  });
+}
+
+async function ladeGespeichert(){
+  const {data}=await db.rpc("get_buffet_selection_details",{p_token:token});
+  if(!data)return;
+  if(eventData.selection_type==="quantity"){
+    data.forEach(s=>{const n=document.querySelector('.menge[data-id="'+s.buffet_item_id+'"]');if(n)n.value=s.quantity});
+  }else{
+    const ids=data.map(s=>Number(s.buffet_item_id));
+    document.querySelectorAll(".buffet-auswahl").forEach(cb=>cb.checked=ids.includes(Number(cb.value)));
+  }
+  if(data.length)document.getElementById("speicherstatus").textContent="Gespeicherte Auswahl geladen.";
+}
+
+function aktualisiere(){
+  if(eventData.selection_type==="quantity"){aktualisiereMengen();return}
+  const counts={vorspeise:0,hauptspeise:0,beilage:0,dessert:0};
+  document.querySelectorAll(".buffet-auswahl:checked").forEach(x=>{if(x.dataset.category in counts)counts[x.dataset.category]++});
+  const inc={vorspeise:Number(eventData.included_appetizers||0),hauptspeise:Number(eventData.included_main_courses||0),beilage:Number(eventData.included_sides||0),dessert:Number(eventData.included_desserts||0)};
+  const extra={
+    vorspeise:Math.max(0,counts.vorspeise-inc.vorspeise),
+    hauptspeise:Math.max(0,counts.hauptspeise-inc.hauptspeise),
+    beilage:Math.max(0,counts.beilage-inc.beilage),
+    dessert:Math.max(0,counts.dessert-inc.dessert)
+  };
+  const surcharge=extra.vorspeise*Number(eventData.extra_appetizer_price||0)+extra.hauptspeise*Number(eventData.extra_main_course_price||0)+extra.beilage*Number(eventData.extra_side_price||0)+extra.dessert*Number(eventData.extra_dessert_price||0);
+  const pp=Number(eventData.base_price_per_person||0)+surcharge;
+  document.getElementById("auswahlmengen").textContent=
+    "Vorspeisen: "+counts.vorspeise+" von "+inc.vorspeise+" inklusive | Hauptspeisen: "+counts.hauptspeise+" von "+inc.hauptspeise+" inklusive | Beilagen: "+counts.beilage+" von "+inc.beilage+" inklusive | Desserts: "+counts.dessert+" von "+inc.dessert+" inklusive";
+  document.getElementById("preise").innerHTML="Grundpreis: "+euro(eventData.base_price_per_person)+" p. P.<br>Preis pro Person: <strong>"+euro(pp)+"</strong> | "+eventData.guest_count+" Personen: <strong>"+euro(pp*Number(eventData.guest_count||0))+"</strong>";
+}
+
+function aktualisiereMengen(){
+  let total=0,sorten=0;
+  document.querySelectorAll(".menge").forEach(n=>{const q=Math.max(0,Number(n.value)||0);if(q>0){total+=q;sorten++}});
+  const minTotal=Number(eventData.minimum_total_quantity||30), minItem=Number(eventData.minimum_quantity_per_item||10), unit=Number(eventData.unit_price||0);
+  document.getElementById("auswahlmengen").textContent="Ausgewählte Sorten: "+sorten+" | Stück gesamt: "+total+" (mindestens "+minTotal+") | mindestens "+minItem+" Stück je gewählter Sorte";
+  document.getElementById("preise").innerHTML="Preis pro Stück: "+euro(unit)+" | Gesamt: <strong>"+euro(total*unit)+"</strong>";
+}
+
+async function speichereAuswahl(){
+  const btn=document.getElementById("speichern"),status=document.getElementById("speicherstatus");
+  btn.disabled=true;status.textContent="Auswahl wird gespeichert ...";
+  let result;
+  if(eventData.selection_type==="quantity"){
+    const ids=[],qty=[];
+    document.querySelectorAll(".menge").forEach(n=>{const q=Number(n.value)||0;if(q>0){ids.push(Number(n.dataset.id));qty.push(q)}});
+    const minTotal=Number(eventData.minimum_total_quantity||30),minItem=Number(eventData.minimum_quantity_per_item||10);
+    if(qty.reduce((a,b)=>a+b,0)<minTotal||qty.some(q=>q<minItem)){status.textContent="Bitte Mindestmengen beachten.";btn.disabled=false;return}
+    result=await db.rpc("submit_buffet_quantities",{p_token:token,p_item_ids:ids,p_quantities:qty});
+  }else{
+    const ids=Array.from(document.querySelectorAll(".buffet-auswahl:checked")).map(x=>Number(x.value));
+    result=await db.rpc("submit_buffet_selection",{p_token:token,p_item_ids:ids});
+  }
+  btn.disabled=false;
+  if(result.error){console.error(result.error);status.textContent="Speichern nicht möglich.";return}
+  status.textContent="✓ Auswahl wurde gespeichert.";
+}
+
+(async()=>{if(await ladeVeranstaltung())await ladeBuffet()})();
+</script>
 </body>
-
 </html>
