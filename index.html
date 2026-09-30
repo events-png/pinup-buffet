@@ -11,8 +11,9 @@
     h1{margin:2px 0;font-size:24px} #veranstaltung h2{margin:5px 0;font-size:20px}
     #auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px auto 0;border-radius:8px;max-width:850px;border:1px solid #fbbf24;line-height:1.45}
     #preise{padding-top:5px;margin-top:5px;border-top:1px solid #e5c75c}
-    #speichern{margin-top:7px;padding:8px 18px;border:0;border-radius:6px;background:#fbbf24;font-weight:bold;cursor:pointer}
-    #speichern:disabled{opacity:.5} #speicherstatus{margin-top:6px;font-weight:bold}
+    #speichern,#finalisieren{margin-top:7px;padding:8px 18px;border:0;border-radius:6px;font-weight:bold;cursor:pointer}
+    #speichern{background:#fbbf24} #finalisieren{background:#222;color:#fff;margin-left:6px}
+    #speichern:disabled,#finalisieren:disabled{opacity:.5} #speicherstatus{margin-top:6px;font-weight:bold}
     main{max-width:850px;margin:auto;padding:8px 20px 50px} h3{margin:22px 0 8px;border-bottom:2px solid #fbbf24;padding-bottom:7px}
     label.item{display:flex;align-items:center;gap:10px;padding:11px;margin:7px 0;background:#fff;border:1px solid #e5e5e5;border-radius:6px}
     label.item:hover{background:#fff8df} input[type=checkbox]{transform:scale(1.2)}
@@ -30,6 +31,7 @@
     <div id="auswahlmengen"></div>
     <div id="preise"></div>
     <button id="speichern" onclick="speichereAuswahl()">Auswahl speichern</button>
+    <button id="finalisieren" onclick="finalisiereAuswahl()">Buffetauswahl verbindlich übermitteln</button>
     <div id="speicherstatus"></div>
   </div>
 </header>
@@ -47,8 +49,10 @@ async function ladeVeranstaltung(){
   const {data,error}=await db.rpc("get_event_by_token",{p_token:token});
   if(error||!data?.length){document.getElementById("meldung").textContent="Veranstaltung nicht gefunden.";return false}
   eventData=data[0];
+  const {data:finalData}=await db.rpc("get_buffet_finalization_status",{p_token:token});
+  eventData.buffet_finalized_at=finalData?.[0]?.buffet_finalized_at||null;
   const now=new Date(), today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
-  geschlossen=eventData.status!=="open"||(eventData.buffet_deadline&&eventData.buffet_deadline<today);
+  geschlossen=eventData.status!=="open"||(eventData.buffet_deadline&&eventData.buffet_deadline<today)||!!eventData.buffet_finalized_at;
   document.getElementById("meldung").textContent=eventData.buffet_name||"Ihre Veranstaltung";
   const h=document.createElement("h2");
   h.append(document.createTextNode(eventData.customer_name||"Veranstaltung"));
@@ -70,7 +74,10 @@ async function ladeBuffet(){
   if(geschlossen){
     document.querySelectorAll("input").forEach(x=>x.disabled=true);
     document.getElementById("speichern").style.display="none";
-    document.getElementById("speicherstatus").textContent="Die Auswahlfrist ist abgelaufen. Änderungen sind nicht mehr möglich.";
+    document.getElementById("finalisieren").style.display="none";
+    document.getElementById("speicherstatus").textContent=eventData.buffet_finalized_at
+      ?"✓ Ihre Buffetauswahl wurde verbindlich übermittelt. Sie können dieses Fenster schließen."
+      :"Die Auswahlfrist ist abgelaufen. Der zuletzt gespeicherte Stand wurde übernommen.";
   }
 }
 
@@ -116,7 +123,7 @@ async function ladeGespeichert(){
     const ids=data.map(s=>Number(s.buffet_item_id));
     document.querySelectorAll(".buffet-auswahl").forEach(cb=>cb.checked=ids.includes(Number(cb.value)));
   }
-  if(data.length)document.getElementById("speicherstatus").textContent="Gespeicherte Auswahl geladen.";
+  if(data.length&&!eventData.buffet_finalized_at)document.getElementById("speicherstatus").textContent="Gespeicherte Auswahl geladen. Sie können weiter bearbeiten oder den Browser schließen.";
 }
 
 function aktualisiere(){
@@ -146,22 +153,46 @@ function aktualisiereMengen(){
 }
 
 async function speichereAuswahl(){
-  const btn=document.getElementById("speichern"),status=document.getElementById("speicherstatus");
-  btn.disabled=true;status.textContent="Auswahl wird gespeichert ...";
+  const btn=document.getElementById("speichern"),finalBtn=document.getElementById("finalisieren"),status=document.getElementById("speicherstatus");
+  btn.disabled=true;finalBtn.disabled=true;status.textContent="Auswahl wird gespeichert ...";
   let result;
   if(eventData.selection_type==="quantity"){
     const ids=[],qty=[];
     document.querySelectorAll(".menge").forEach(n=>{const q=Number(n.value)||0;if(q>0){ids.push(Number(n.dataset.id));qty.push(q)}});
     const minTotal=Number(eventData.minimum_total_quantity||30),minItem=Number(eventData.minimum_quantity_per_item||10);
-    if(qty.reduce((a,b)=>a+b,0)<minTotal||qty.some(q=>q<minItem)){status.textContent="Bitte Mindestmengen beachten.";btn.disabled=false;return}
+    if(qty.reduce((a,b)=>a+b,0)<minTotal||qty.some(q=>q<minItem)){status.textContent="Bitte Mindestmengen beachten.";btn.disabled=false;finalBtn.disabled=false;return false}
     result=await db.rpc("submit_buffet_quantities",{p_token:token,p_item_ids:ids,p_quantities:qty});
   }else{
     const ids=Array.from(document.querySelectorAll(".buffet-auswahl:checked")).map(x=>Number(x.value));
     result=await db.rpc("submit_buffet_selection",{p_token:token,p_item_ids:ids});
   }
-  btn.disabled=false;
-  if(result.error){console.error(result.error);status.textContent="Speichern nicht möglich.";return}
-  status.textContent="✓ Auswahl wurde gespeichert.";
+  btn.disabled=false;finalBtn.disabled=false;
+  if(result.error){console.error(result.error);status.textContent="Speichern nicht möglich.";return false}
+  status.textContent="✓ Ihre Auswahl wurde gespeichert. Sie können den Browser jetzt schließen und bis zur Frist über diesen Link weiter bearbeiten.";
+  return true;
+}
+
+async function finalisiereAuswahl(){
+  if(!confirm("Möchten Sie Ihre Buffetauswahl jetzt verbindlich übermitteln? Danach sind keine Änderungen mehr möglich."))return;
+  const gespeichert=await speichereAuswahl();
+  if(!gespeichert)return;
+
+  const btn=document.getElementById("speichern"),finalBtn=document.getElementById("finalisieren"),status=document.getElementById("speicherstatus");
+  btn.disabled=true;finalBtn.disabled=true;status.textContent="Buffetauswahl wird verbindlich übermittelt ...";
+  const {data,error}=await db.rpc("finalize_buffet_selection",{p_token:token});
+  if(error){
+    console.error(error);
+    btn.disabled=false;finalBtn.disabled=false;
+    status.textContent="Verbindliche Übermittlung nicht möglich.";
+    return;
+  }
+
+  eventData.buffet_finalized_at=data;
+  geschlossen=true;
+  document.querySelectorAll("input").forEach(x=>x.disabled=true);
+  btn.style.display="none";
+  finalBtn.style.display="none";
+  status.textContent="✓ Ihre Buffetauswahl wurde verbindlich übermittelt. Sie können dieses Fenster jetzt schließen.";
 }
 
 (async()=>{if(await ladeVeranstaltung())await ladeBuffet()})();
