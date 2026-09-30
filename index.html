@@ -110,11 +110,11 @@ bereich.appendChild(zeile);
 
   let zaehler = document.getElementById("auswahlzaehler");
 
-  if (!zaehler) {
-    zaehler = document.createElement("div");
-    document.body.prepend(zaehler);
-  }
-
+ if (!zaehler) {
+  zaehler = document.createElement("div");
+  zaehler.id = "auswahlzaehler";
+  document.body.prepend(zaehler);
+}
   zaehler.textContent =
     `Vorspeisen: ${anzahl.vorspeise}/4 | ` +
     `Hauptspeisen: ${anzahl.hauptspeise}/2 | ` +
