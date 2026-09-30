@@ -183,7 +183,7 @@ flex-shrink: 0;
 
 
     /* ZUGANGSCODE */
-
+let gaestezahl = 0;
     const token = new URLSearchParams(
       window.location.search
     ).get("token");
@@ -219,6 +219,7 @@ flex-shrink: 0;
       }
 
       const event = data[0];
+      gaestezahl = Number(event.guest_count) || 0;
 
       meldung.textContent = "Ihre Veranstaltung:";
 
@@ -314,40 +315,58 @@ flex-shrink: 0;
 
     function aktualisiereAuswahl() {
 
-      const auswahl = document.querySelectorAll(
-        ".buffet-auswahl:checked"
-      );
+  const auswahl = document.querySelectorAll(
+    ".buffet-auswahl:checked"
+  );
 
-      const anzahl = {
-        vorspeise: 0,
-        hauptspeise: 0,
-        beilage: 0,
-        dessert: 0
-      };
+  const anzahl = {
+    vorspeise: 0,
+    hauptspeise: 0,
+    beilage: 0,
+    dessert: 0
+  };
 
-      auswahl.forEach(item => {
+  auswahl.forEach(item => {
+    const kategorie = item.dataset.category;
 
-        const kategorie = item.dataset.category;
-
-        if (kategorie in anzahl) {
-          anzahl[kategorie]++;
-        }
-
-      });
-
-      const zaehler = document.getElementById(
-        "zaehlerinhalt"
-      );
-
-      zaehler.innerHTML = `
-        Vorspeisen: ${anzahl.vorspeise}/4<br>
-        Hauptspeisen: ${anzahl.hauptspeise}/2<br>
-        Beilagen: ${anzahl.beilage}/3<br>
-        Desserts: ${anzahl.dessert}/1
-      `;
-
+    if (kategorie in anzahl) {
+      anzahl[kategorie]++;
     }
+  });
 
+  const aufpreis =
+    Math.max(0, anzahl.vorspeise - 4) * 5 +
+    Math.max(0, anzahl.hauptspeise - 2) * 6.5 +
+    Math.max(0, anzahl.beilage - 3) * 5 +
+    Math.max(0, anzahl.dessert - 1) * 5;
+
+  const preisProPerson = 31.50 + aufpreis;
+  const gesamtpreis = preisProPerson * gaestezahl;
+
+  const euro = wert =>
+    wert.toLocaleString("de-DE", {
+      style: "currency",
+      currency: "EUR"
+    });
+
+  document.getElementById("zaehlerinhalt").innerHTML = `
+    Vorspeisen: ${anzahl.vorspeise}/4 |
+    Hauptspeisen: ${anzahl.hauptspeise}/2<br>
+
+    Beilagen: ${anzahl.beilage}/3 |
+    Desserts: ${anzahl.dessert}/1
+
+    <hr>
+
+    Grundpreis: ${euro(31.50)} pro Person<br>
+    Aufpreis: ${euro(aufpreis)} pro Person<br>
+
+    <strong>
+      Preis pro Person: ${euro(preisProPerson)}<br>
+      Gesamtpreis: ${euro(gesamtpreis)}
+    </strong>
+  `;
+}
 
     /* KOPFBEREICH AUTOMATISCH BERÜCKSICHTIGEN */
 
