@@ -80,6 +80,8 @@ const checkbox = document.createElement("input");
 checkbox.type = "checkbox";
 checkbox.value = item.id;
 checkbox.className = "buffet-auswahl";
+        checkbox.dataset.category = item.category.trim().toLowerCase();
+checkbox.addEventListener("change", aktualisiereAuswahl);
 
 zeile.appendChild(checkbox);
 zeile.appendChild(
@@ -89,6 +91,35 @@ zeile.appendChild(
 bereich.appendChild(zeile);
       });
   }
+}
+    function aktualisiereAuswahl() {
+  const auswahl = document.querySelectorAll(
+    ".buffet-auswahl:checked"
+  );
+
+  const anzahl = {
+    vorspeise: 0,
+    hauptspeise: 0,
+    beilage: 0,
+    dessert: 0
+  };
+
+  auswahl.forEach(item => {
+    anzahl[item.dataset.category]++;
+  });
+
+  let zaehler = document.getElementById("auswahlzaehler");
+
+  if (!zaehler) {
+    zaehler = document.createElement("div");
+    document.body.prepend(zaehler);
+  }
+
+  zaehler.textContent =
+    `Vorspeisen: ${anzahl.vorspeise}/4 | ` +
+    `Hauptspeisen: ${anzahl.hauptspeise}/2 | ` +
+    `Beilagen: ${anzahl.beilage}/3 | ` +
+    `Desserts: ${anzahl.dessert}/1`;
 }
    ladeVeranstaltung().then(ladeBuffet);
   </script>
