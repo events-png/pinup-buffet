@@ -10,16 +10,68 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       max-width: 850px;
-      margin: 40px auto;
+      margin: 0 auto;
       padding: 20px;
       background: #f7f7f7;
+      color: #222;
     }
 
-    h1 {
-      color: #222;
+    /* FESTER KOPFBEREICH */
+
+    #kopfbereich {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 24px;
+      background: #ffffff;
+      z-index: 1000;
+      border-bottom: 3px solid #fbbf24;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    #kopfbereich h1 {
+      margin: 5px 0;
+      font-size: 24px;
+    }
+
+    #kopfbereich p {
+      margin: 5px 0;
+    }
+
+    #veranstaltung h2 {
+      margin: 8px 0;
+      font-size: 20px;
+    }
+
+    /* AUSWAHLZÄHLER */
+
+    #auswahlzaehler {
+      background: #fff8df;
+      padding: 10px 15px;
+      margin: 10px auto 0;
+      border-radius: 8px;
+      max-width: 800px;
+      line-height: 1.5;
+      border: 1px solid #fbbf24;
+    }
+
+    #zaehlerinhalt {
+      margin-top: 5px;
+    }
+
+    /* BUFFET */
+
+    #buffet {
+      padding-bottom: 50px;
     }
 
     h3 {
@@ -30,48 +82,85 @@
 
     label {
       display: block;
-      margin: 12px 0;
+      padding: 12px;
+      margin: 8px 0;
+      background: white;
+      border-radius: 6px;
       cursor: pointer;
+      border: 1px solid #e5e5e5;
+    }
+
+    label:hover {
+      background: #fff8df;
     }
 
     input[type="checkbox"] {
       margin-right: 10px;
+      transform: scale(1.2);
     }
 
-    #auswahlzaehler {
-      background: white;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 8px;
-      line-height: 1.8;
-      position: fixed;
-top: 10px;
-left: 50%;
-transform: translateX(-50%);
-width: min(90%, 800px);
-box-sizing: border-box;
-z-index: 1000;
-      border: 2px solid #fbbf24;
+    /* HANDYANSICHT */
+
+    @media (max-width: 600px) {
+
+      #kopfbereich {
+        padding: 10px;
+      }
+
+      #kopfbereich h1 {
+        font-size: 20px;
+      }
+
+      #veranstaltung h2 {
+        font-size: 17px;
+      }
+
+      #auswahlzaehler {
+        font-size: 13px;
+      }
+
+      body {
+        padding: 12px;
+      }
+
     }
   </style>
+
 </head>
 
 <body>
 
-  <h1>pin-up Buffetauswahl</h1>
+  <!-- FESTER KOPFBEREICH -->
 
-  <p id="meldung">Veranstaltung wird geladen ...</p>
+  <header id="kopfbereich">
 
-  <div id="veranstaltung"></div>
+    <h1>pin-up Buffetauswahl</h1>
 
-  <div id="auswahlzaehler" hidden>
-    <strong>Ihre Auswahl</strong>
-    <div id="zaehlerinhalt"></div>
-  </div>
+    <p id="meldung">
+      Veranstaltung wird geladen ...
+    </p>
 
-  <div id="buffet"></div>
+    <div id="veranstaltung"></div>
+
+    <div id="auswahlzaehler" hidden>
+
+      <strong>Ihre Auswahl</strong>
+
+      <div id="zaehlerinhalt"></div>
+
+    </div>
+
+  </header>
+
+
+  <!-- BUFFET-GERICHTE -->
+
+  <main id="buffet"></main>
+
 
   <script>
+
+    /* SUPABASE */
 
     const SUPABASE_URL =
       "https://gfhvecfpdfftfkidlfjc.supabase.co";
@@ -84,39 +173,50 @@ z-index: 1000;
       SUPABASE_KEY
     );
 
+
+    /* ZUGANGSCODE */
+
     const token = new URLSearchParams(
       window.location.search
     ).get("token");
 
 
-    // VERANSTALTUNG LADEN
+    /* VERANSTALTUNG LADEN */
 
     async function ladeVeranstaltung() {
 
       const meldung = document.getElementById("meldung");
 
       if (!token) {
+
         meldung.textContent =
           "Kein Veranstaltungslink angegeben.";
+
         return false;
       }
 
       const { data, error } = await db.rpc(
         "get_event_by_token",
-        { p_token: token }
+        {
+          p_token: token
+        }
       );
 
       if (error || !data || data.length === 0) {
+
         meldung.textContent =
           "Veranstaltung nicht gefunden.";
+
         return false;
       }
+
+      const event = data[0];
 
       meldung.textContent = "Ihre Veranstaltung:";
 
       const titel = document.createElement("h2");
 
-      titel.textContent = data[0].customer_name;
+      titel.textContent = event.customer_name;
 
       document.getElementById("veranstaltung")
         .appendChild(titel);
@@ -125,7 +225,7 @@ z-index: 1000;
     }
 
 
-    // BUFFET LADEN
+    /* BUFFET LADEN */
 
     async function ladeBuffet() {
 
@@ -134,7 +234,9 @@ z-index: 1000;
       );
 
       if (error) {
+
         alert("Buffet konnte nicht geladen werden.");
+
         return;
       }
 
@@ -200,7 +302,7 @@ z-index: 1000;
     }
 
 
-    // AUSWAHL ZÄHLEN
+    /* AUSWAHL ZÄHLEN */
 
     function aktualisiereAuswahl() {
 
@@ -239,17 +341,45 @@ z-index: 1000;
     }
 
 
-    // SEITE STARTEN
+    /* KOPFBEREICH AUTOMATISCH BERÜCKSICHTIGEN */
+
+    function aktualisiereAbstand() {
+
+      const kopfbereich = document.getElementById(
+        "kopfbereich"
+      );
+
+      const buffet = document.getElementById(
+        "buffet"
+      );
+
+      buffet.style.paddingTop =
+        (kopfbereich.offsetHeight + 20) + "px";
+
+    }
+
+
+    /* SEITE STARTEN */
 
     async function starten() {
 
       const gefunden = await ladeVeranstaltung();
 
       if (gefunden) {
+
         await ladeBuffet();
+
       }
 
+      aktualisiereAbstand();
+
     }
+
+
+    window.addEventListener(
+      "resize",
+      aktualisiereAbstand
+    );
 
     starten();
 
