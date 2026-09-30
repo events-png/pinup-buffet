@@ -273,8 +273,21 @@
       const titel =
         document.createElement("h2");
 
-      titel.textContent =
-        event.customer_name;
+     const datumFormatieren = datum => {
+  if (!datum) return "-";
+
+  return new Date(datum + "T00:00:00")
+    .toLocaleDateString("de-DE");
+};
+
+titel.innerHTML = `
+  ${event.customer_name}
+  <div style="font-size:14px; font-weight:normal; margin-top:4px;">
+    Veranstaltung: ${datumFormatieren(event.event_date)}
+    &nbsp; | &nbsp;
+    Auswahl möglich bis: ${datumFormatieren(event.buffet_deadline)}
+  </div>
+`;
 
       document
         .getElementById("veranstaltung")
