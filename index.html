@@ -479,23 +479,23 @@
         ) + " €";
 
       document.getElementById(
-        "auswahlmengen"
-      ).innerHTML = `
-        Vorspeisen:
-        <strong>${anzahl.vorspeise}/4</strong>
-        &nbsp; | &nbsp;
+  "auswahlmengen"
+).innerHTML = `
+  Vorspeisen:
+  <strong>${anzahl.vorspeise}</strong> von 4 inklusive
+  &nbsp; | &nbsp;
 
-        Hauptspeisen:
-        <strong>${anzahl.hauptspeise}/2</strong>
-        &nbsp; | &nbsp;
+  Hauptspeisen:
+  <strong>${anzahl.hauptspeise}</strong> von 2 inklusive
+  &nbsp; | &nbsp;
 
-        Beilagen:
-        <strong>${anzahl.beilage}/3</strong>
-        &nbsp; | &nbsp;
+  Beilagen:
+  <strong>${anzahl.beilage}</strong> von 3 inklusive
+  &nbsp; | &nbsp;
 
-        Desserts:
-        <strong>${anzahl.dessert}/1</strong>
-      `;
+  Desserts:
+  <strong>${anzahl.dessert}</strong> von 1 inklusive
+`;
 
       let preisText = `
         Grundpreis:
