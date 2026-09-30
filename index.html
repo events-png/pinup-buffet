@@ -69,9 +69,21 @@ async function ladeBuffet() {
 
     data.filter(item => item.category === kategorie)
       .forEach(item => {
-        const zeile = document.createElement("p");
-        zeile.textContent = item.name;
-        bereich.appendChild(zeile);
+        const zeile = document.createElement("label");
+zeile.style.display = "block";
+zeile.style.margin = "10px 0";
+
+const checkbox = document.createElement("input");
+checkbox.type = "checkbox";
+checkbox.value = item.id;
+checkbox.className = "buffet-auswahl";
+
+zeile.appendChild(checkbox);
+zeile.appendChild(
+  document.createTextNode(" " + item.name)
+);
+
+bereich.appendChild(zeile);
       });
   }
 }
