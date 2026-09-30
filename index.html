@@ -2,13 +2,58 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>pin-up | Buffetauswahl</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
-  <h1>Willkommen zur Buffetauswahl</h1>
-  <p>Stellen Sie Ihr persönliches Buffet zusammen.</p>
-  <p>Die Auswahl wird hier in Kürze angezeigt.</p>
+  <h1>pin-up Buffetauswahl</h1>
+  <p id="meldung">Veranstaltung wird geladen ...</p>
+  <div id="veranstaltung"></div>
+
+  <script>
+    const SUPABASE_URL = "https://gfhvecfpdfftfkidlfjc.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft";
+
+    const db = supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function ladeVeranstaltung() {
+      const token = new URLSearchParams(
+        window.location.search
+      ).get("token");
+
+      const meldung = document.getElementById("meldung");
+
+      if (!token) {
+        meldung.textContent = "Kein Veranstaltungslink angegeben.";
+        return;
+      }
+
+      const { data, error } = await db.rpc(
+        "get_event_by_token",
+        { p_token: token }
+      );
+
+      if (error || !data || data.length === 0) {
+        meldung.textContent = "Veranstaltung nicht gefunden.";
+        return;
+      }
+
+      meldung.textContent = "Ihre Veranstaltung:";
+
+      const titel = document.createElement("h2");
+      titel.textContent = data[0].customer_name;
+
+      document.getElementById("veranstaltung")
+        .appendChild(titel);
+    }
+
+    ladeVeranstaltung();
+  </script>
 </body>
 </html>
