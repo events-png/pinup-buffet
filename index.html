@@ -232,6 +232,7 @@
     );
 
     let gaestezahl = 0;
+    let auswahlGeschlossen = false;
 
     const token = new URLSearchParams(
       window.location.search
@@ -266,6 +267,16 @@
 
       gaestezahl =
         Number(event.guest_count) || 0;
+
+      const heute = new Date();
+      const heuteIso =
+        heute.getFullYear() + "-" +
+        String(heute.getMonth() + 1).padStart(2, "0") + "-" +
+        String(heute.getDate()).padStart(2, "0");
+
+      auswahlGeschlossen =
+        event.status !== "open" ||
+        (event.buffet_deadline && event.buffet_deadline < heuteIso);
 
       meldung.textContent =
         "Ihre Veranstaltung:";
@@ -388,6 +399,25 @@ titel.innerHTML = `
         .hidden = false;
 
       aktualisiereAuswahl();
+
+      if (auswahlGeschlossen) {
+        document
+          .querySelectorAll(".buffet-auswahl")
+          .forEach(checkbox => {
+            checkbox.disabled = true;
+          });
+
+        const speichern =
+          document.getElementById("speichern");
+
+        speichern.disabled = true;
+        speichern.style.display = "none";
+
+        document.getElementById(
+          "speicherstatus"
+        ).textContent =
+          "Die Auswahlfrist ist abgelaufen. Änderungen sind nicht mehr möglich.";
+      }
     }
 
 
