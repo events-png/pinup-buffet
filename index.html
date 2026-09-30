@@ -478,25 +478,36 @@
           }
         ) + " €";
 
-      document.getElementById(
+    document.getElementById(
   "auswahlmengen"
 ).innerHTML = `
   Vorspeisen:
   <strong>${anzahl.vorspeise}</strong> von 4 inklusive
+  ${extraVorspeisen > 0
+    ? ` · <strong>+ ${euro(extraVorspeisen * 5)} p. P.</strong>`
+    : ""}
   &nbsp; | &nbsp;
 
   Hauptspeisen:
   <strong>${anzahl.hauptspeise}</strong> von 2 inklusive
+  ${extraHauptspeisen > 0
+    ? ` · <strong>+ ${euro(extraHauptspeisen * 6.5)} p. P.</strong>`
+    : ""}
   &nbsp; | &nbsp;
 
   Beilagen:
   <strong>${anzahl.beilage}</strong> von 3 inklusive
+  ${extraBeilagen > 0
+    ? ` · <strong>+ ${euro(extraBeilagen * 5)} p. P.</strong>`
+    : ""}
   &nbsp; | &nbsp;
 
   Desserts:
   <strong>${anzahl.dessert}</strong> von 1 inklusive
+  ${extraDesserts > 0
+    ? ` · <strong>+ ${euro(extraDesserts * 5)} p. P.</strong>`
+    : ""}
 `;
-
       let preisText = `
         Grundpreis:
         ${euro(grundpreis)}
