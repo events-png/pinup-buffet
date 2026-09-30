@@ -67,7 +67,10 @@ async function ladeBuffet() {
     titel.textContent = kategorie;
     bereich.appendChild(titel);
 
-    data.filter(item => item.category === kategorie)
+   data.filter(item =>
+  item.category?.trim().toLowerCase() ===
+  kategorie.toLowerCase()
+)
       .forEach(item => {
         const zeile = document.createElement("label");
 zeile.style.display = "block";
