@@ -1,37 +1,99 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>pin-up | Buffetauswahl</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 850px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+
+    h1 {
+      color: #222;
+    }
+
+    h3 {
+      margin-top: 30px;
+      border-bottom: 2px solid #fbbf24;
+      padding-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    #auswahlzaehler {
+      background: white;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 8px;
+      line-height: 1.8;
+      position: sticky;
+      top: 0;
+      border: 2px solid #fbbf24;
+    }
+  </style>
 </head>
 
 <body>
+
   <h1>pin-up Buffetauswahl</h1>
+
   <p id="meldung">Veranstaltung wird geladen ...</p>
+
   <div id="veranstaltung"></div>
 
+  <div id="auswahlzaehler" hidden>
+    <strong>Ihre Auswahl</strong>
+    <div id="zaehlerinhalt"></div>
+  </div>
+
+  <div id="buffet"></div>
+
   <script>
-    const SUPABASE_URL = "https://gfhvecfpdfftfkidlfjc.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft";
+
+    const SUPABASE_URL =
+      "https://gfhvecfpdfftfkidlfjc.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft";
 
     const db = supabase.createClient(
       SUPABASE_URL,
       SUPABASE_KEY
     );
 
+    const token = new URLSearchParams(
+      window.location.search
+    ).get("token");
+
+
+    // VERANSTALTUNG LADEN
+
     async function ladeVeranstaltung() {
-      const token = new URLSearchParams(
-        window.location.search
-      ).get("token");
 
       const meldung = document.getElementById("meldung");
 
       if (!token) {
-        meldung.textContent = "Kein Veranstaltungslink angegeben.";
-        return;
+        meldung.textContent =
+          "Kein Veranstaltungslink angegeben.";
+        return false;
       }
 
       const { data, error } = await db.rpc(
@@ -40,88 +102,153 @@
       );
 
       if (error || !data || data.length === 0) {
-        meldung.textContent = "Veranstaltung nicht gefunden.";
-        return;
+        meldung.textContent =
+          "Veranstaltung nicht gefunden.";
+        return false;
       }
 
       meldung.textContent = "Ihre Veranstaltung:";
 
       const titel = document.createElement("h2");
+
       titel.textContent = data[0].customer_name;
 
       document.getElementById("veranstaltung")
         .appendChild(titel);
+
+      return true;
     }
-async function ladeBuffet() {
-  const { data, error } = await db.rpc("get_buffet_items");
 
-  if (error) {
-    alert("Buffet konnte nicht geladen werden.");
-    return;
-  }
 
-  const bereich = document.getElementById("veranstaltung");
+    // BUFFET LADEN
 
- for (const kategorie of ["Vorspeise", "Hauptspeise", "Beilage", "Dessert"]) {
-    const titel = document.createElement("h3");
-    titel.textContent = kategorie;
-    bereich.appendChild(titel);
+    async function ladeBuffet() {
 
-   data.filter(item =>
-  item.category?.trim().toLowerCase() ===
-  kategorie.toLowerCase()
-)
-      .forEach(item => {
-        const zeile = document.createElement("label");
-zeile.style.display = "block";
-zeile.style.margin = "10px 0";
+      const { data, error } = await db.rpc(
+        "get_buffet_items"
+      );
 
-const checkbox = document.createElement("input");
-checkbox.type = "checkbox";
-checkbox.value = item.id;
-checkbox.className = "buffet-auswahl";
-        checkbox.dataset.category = item.category.trim().toLowerCase();
-checkbox.addEventListener("change", aktualisiereAuswahl);
+      if (error) {
+        alert("Buffet konnte nicht geladen werden.");
+        return;
+      }
 
-zeile.appendChild(checkbox);
-zeile.appendChild(
-  document.createTextNode(" " + item.name)
-);
+      const bereich = document.getElementById("buffet");
 
-bereich.appendChild(zeile);
-      });
-  }
-}
+      bereich.replaceChildren();
+
+      const kategorien = [
+        "Vorspeise",
+        "Hauptspeise",
+        "Beilage",
+        "Dessert"
+      ];
+
+      for (const kategorie of kategorien) {
+
+        const titel = document.createElement("h3");
+
+        titel.textContent = kategorie;
+
+        bereich.appendChild(titel);
+
+        const gerichte = data.filter(item =>
+          item.category?.trim().toLowerCase() ===
+          kategorie.toLowerCase()
+        );
+
+        gerichte.forEach(item => {
+
+          const zeile = document.createElement("label");
+
+          const checkbox = document.createElement("input");
+
+          checkbox.type = "checkbox";
+
+          checkbox.value = item.id;
+
+          checkbox.className = "buffet-auswahl";
+
+          checkbox.dataset.category =
+            item.category.trim().toLowerCase();
+
+          checkbox.addEventListener(
+            "change",
+            aktualisiereAuswahl
+          );
+
+          zeile.appendChild(checkbox);
+
+          zeile.appendChild(
+            document.createTextNode(" " + item.name)
+          );
+
+          bereich.appendChild(zeile);
+
+        });
+
+      }
+
+      document.getElementById("auswahlzaehler").hidden = false;
+
+      aktualisiereAuswahl();
+    }
+
+
+    // AUSWAHL ZÄHLEN
+
     function aktualisiereAuswahl() {
-  const auswahl = document.querySelectorAll(
-    ".buffet-auswahl:checked"
-  );
 
-  const anzahl = {
-    vorspeise: 0,
-    hauptspeise: 0,
-    beilage: 0,
-    dessert: 0
-  };
+      const auswahl = document.querySelectorAll(
+        ".buffet-auswahl:checked"
+      );
 
-  auswahl.forEach(item => {
-    anzahl[item.dataset.category]++;
-  });
+      const anzahl = {
+        vorspeise: 0,
+        hauptspeise: 0,
+        beilage: 0,
+        dessert: 0
+      };
 
-  let zaehler = document.getElementById("auswahlzaehler");
+      auswahl.forEach(item => {
 
- if (!zaehler) {
-  zaehler = document.createElement("div");
-  zaehler.id = "auswahlzaehler";
-  document.body.prepend(zaehler);
-}
-  zaehler.textContent =
-    `Vorspeisen: ${anzahl.vorspeise}/4 | ` +
-    `Hauptspeisen: ${anzahl.hauptspeise}/2 | ` +
-    `Beilagen: ${anzahl.beilage}/3 | ` +
-    `Desserts: ${anzahl.dessert}/1`;
-}
-   ladeVeranstaltung().then(ladeBuffet);
+        const kategorie = item.dataset.category;
+
+        if (kategorie in anzahl) {
+          anzahl[kategorie]++;
+        }
+
+      });
+
+      const zaehler = document.getElementById(
+        "zaehlerinhalt"
+      );
+
+      zaehler.innerHTML = `
+        Vorspeisen: ${anzahl.vorspeise}/4<br>
+        Hauptspeisen: ${anzahl.hauptspeise}/2<br>
+        Beilagen: ${anzahl.beilage}/3<br>
+        Desserts: ${anzahl.dessert}/1
+      `;
+
+    }
+
+
+    // SEITE STARTEN
+
+    async function starten() {
+
+      const gefunden = await ladeVeranstaltung();
+
+      if (gefunden) {
+        await ladeBuffet();
+      }
+
+    }
+
+    starten();
+
   </script>
+
 </body>
 </html>
