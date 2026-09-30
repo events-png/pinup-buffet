@@ -52,8 +52,30 @@
       document.getElementById("veranstaltung")
         .appendChild(titel);
     }
+async function ladeBuffet() {
+  const { data, error } = await db.rpc("get_buffet_items");
 
-    ladeVeranstaltung();
+  if (error) {
+    alert("Buffet konnte nicht geladen werden.");
+    return;
+  }
+
+  const bereich = document.getElementById("veranstaltung");
+
+  for (const kategorie of ["Vorspeise", "Hauptgericht", "Beilage", "Dessert"]) {
+    const titel = document.createElement("h3");
+    titel.textContent = kategorie;
+    bereich.appendChild(titel);
+
+    data.filter(item => item.category === kategorie)
+      .forEach(item => {
+        const zeile = document.createElement("p");
+        zeile.textContent = item.name;
+        bereich.appendChild(zeile);
+      });
+  }
+}
+   ladeVeranstaltung().then(ladeBuffet);
   </script>
 </body>
 </html>
