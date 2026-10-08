@@ -35,6 +35,8 @@ async function load(){
  const result=await db.rpc("get_catering_by_token",{p_token:token});
  if(result.error||!result.data){$("event").textContent="Anfrage nicht gefunden.";return}
  data=result.data;
+ const catalogResponse=await db.rpc("get_catering_catalog_by_token",{p_token:token});
+ const catalog= catalogResponse.error ? [] : (catalogResponse.data||[]);
  $("event").textContent=data.customer_name+" · "+fmtDate(data.event_date)+" · "+data.guest_count+" Personen";
  const until=new Date(data.editable_until);
  editable=Number.isFinite(until.getTime())&&Date.now()<=until.getTime();
@@ -46,8 +48,15 @@ async function load(){
   const heading=document.createElement("h2");heading.textContent=categories[key]||key;section.append(heading);
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
   const entries=(data.items||[]).filter(item=>item.category===key);
-  for(const item of entries)addRow(rows,item);
-  if(editable){
+  if(key==="fingerfood" && catalog.some(item=>item.category===key)){
+   for(const choice of catalog.filter(item=>item.category===key)){
+    const saved=entries.find(item=>item.item_name===choice.name);
+    addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0},true);
+   }
+  }else{
+   for(const item of entries)addRow(rows,item);
+  }
+  if(editable && key!=="fingerfood"){
    const btn=document.createElement("button");btn.type="button";btn.textContent="Position hinzufügen";
    btn.onclick=()=>addRow(rows);section.append(btn);
   }
@@ -56,20 +65,20 @@ async function load(){
  $("save").hidden=!editable;
  $("save").onclick=save;
 }
-function addRow(rows,item={}){
+function addRow(rows,item={},fixed=false){
  const box=document.createElement("div");box.className="item";
  const name=document.createElement("input");name.placeholder="Artikel / Sorte";name.value=item.item_name||"";
- name.style.flex="1";name.maxLength=160;name.disabled=!editable;
+ name.style.flex="1";name.maxLength=160;name.disabled=fixed||!editable;
  const qty=document.createElement("input");qty.type="number";qty.min="0";qty.max="100000";qty.step="1";
  qty.value=item.quantity||0;qty.disabled=!editable;qty.setAttribute("aria-label","Menge");
- box.append(name,qty);rows.append(box);
+ if(fixed){const title=document.createElement("span");title.textContent=item.item_name;box.append(title,qty);box.dataset.name=item.item_name;}else{box.append(name,qty)}rows.append(box);
 }
 async function save(){
  const items=[];
  for(const section of document.querySelectorAll("[data-category]")){
   for(const row of section.querySelectorAll(".item")){
-   const inputs=row.querySelectorAll("input");const name=inputs[0].value.trim();
-   const qty=Number(inputs[1].value);
+   const inputs=row.querySelectorAll("input");const name=row.dataset.name||inputs[0].value.trim();
+   const qty=Number((row.dataset.name?inputs[0]:inputs[1]).value);
    if(!name&&!qty)continue;
    if(!name||!Number.isInteger(qty)||qty<0||qty>100000){
     $("status").textContent="Bitte Artikel und gültige Mengen angeben.";return;
