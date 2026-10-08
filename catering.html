@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pin-up | Catering-Auswahl</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f7f7f7;color:#222}
+header{background:#fff;border-bottom:3px solid #fbbf24;padding:14px;text-align:center}
+h1{font-size:24px;margin:0 0 8px}main{max-width:850px;margin:auto;padding:15px 20px 60px}
+h2{font-size:18px;border-bottom:2px solid #fbbf24;padding-bottom:8px;margin-top:26px}
+.item{display:flex;gap:10px;align-items:center;background:#fff;padding:10px;border:1px solid #ddd;border-radius:6px;margin:7px 0}
+.item span{flex:1}input{padding:8px;border:1px solid #aaa;border-radius:5px}
+input[type=number]{width:90px}button{background:#fbbf24;border:0;padding:11px 20px;border-radius:6px;cursor:pointer;font-weight:bold}
+button:disabled,input:disabled{opacity:.55;cursor:not-allowed}#status{padding:10px 0}
+small{color:#555}@media(max-width:600px){main{padding:12px}h1{font-size:20px}}
+</style>
+</head>
+<body>
+<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div></header>
+<main><p id="deadline"></p><div id="categories"></div><button id="save" hidden>Auswahl speichern und übermitteln</button><p id="status" role="status"></p></main>
+<script>
+const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft");
+const token=new URLSearchParams(location.search).get("token");
+const $=id=>document.getElementById(id);
+const categories={
+ "canapes":"Canapés","fingerfood":"Fingerfood","dessert":"Desserts",
+ "geschirr":"Geschirr & Besteck","mobiliar":"Mobiliar",
+ "tischwaesche":"Tischwäsche","personal":"Personal"
+};
+let data=null,editable=false;
+const fmtDate=d=>d?new Date(d+"T12:00:00").toLocaleDateString("de-DE"):"-";
+async function load(){
+ if(!token){$("event").textContent="Kein gültiger Auswahl-Link.";return}
+ const result=await db.rpc("get_catering_by_token",{p_token:token});
+ if(result.error||!result.data){$("event").textContent="Anfrage nicht gefunden.";return}
+ data=result.data;
+ $("event").textContent=data.customer_name+" · "+fmtDate(data.event_date)+" · "+data.guest_count+" Personen";
+ const until=new Date(data.editable_until);
+ editable=Number.isFinite(until.getTime())&&Date.now()<=until.getTime();
+ $("deadline").textContent="Änderungsfrist: "+(data.editable_until?until.toLocaleString("de-DE"):"nicht verfügbar")+
+  (editable?" · Sie können die Auswahl bis dahin ändern.":" · Die Auswahl ist abgeschlossen.");
+ const container=$("categories");
+ for(const key of data.categories||[]){
+  const section=document.createElement("section");
+  const heading=document.createElement("h2");heading.textContent=categories[key]||key;section.append(heading);
+  const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
+  const entries=(data.items||[]).filter(item=>item.category===key);
+  for(const item of entries)addRow(rows,item);
+  if(editable){
+   const btn=document.createElement("button");btn.type="button";btn.textContent="Position hinzufügen";
+   btn.onclick=()=>addRow(rows);section.append(btn);
+  }
+  container.append(section);
+ }
+ $("save").hidden=!editable;
+ $("save").onclick=save;
+}
+function addRow(rows,item={}){
+ const box=document.createElement("div");box.className="item";
+ const name=document.createElement("input");name.placeholder="Artikel / Sorte";name.value=item.item_name||"";
+ name.style.flex="1";name.maxLength=160;name.disabled=!editable;
+ const qty=document.createElement("input");qty.type="number";qty.min="0";qty.max="100000";qty.step="1";
+ qty.value=item.quantity||0;qty.disabled=!editable;qty.setAttribute("aria-label","Menge");
+ box.append(name,qty);rows.append(box);
+}
+async function save(){
+ const items=[];
+ for(const section of document.querySelectorAll("[data-category]")){
+  for(const row of section.querySelectorAll(".item")){
+   const inputs=row.querySelectorAll("input");const name=inputs[0].value.trim();
+   const qty=Number(inputs[1].value);
+   if(!name&&!qty)continue;
+   if(!name||!Number.isInteger(qty)||qty<0||qty>100000){
+    $("status").textContent="Bitte Artikel und gültige Mengen angeben.";return;
+   }
+   if(qty>0)items.push({category:section.dataset.category,item_name:name,quantity:qty});
+  }
+ }
+ $("save").disabled=true;$("status").textContent="Auswahl wird gespeichert ...";
+ const result=await db.rpc("save_catering_by_token",{p_token:token,p_items:items});
+ $("save").disabled=false;
+ $("status").textContent=result.error?"Speichern nicht möglich: "+result.error.message:
+  "Ihre Auswahl wurde gespeichert. Sie können sie bis zum Fristablauf erneut bearbeiten.";
+}
+load();
+</script>
+</body></html>
