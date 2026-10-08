@@ -17,7 +17,7 @@ small{color:#555}#auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px 
 </style>
 </head>
 <body>
-<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div><div id="auswahlzaehler" hidden><strong>Ihre Auswahl</strong><div id="auswahlmengen"></div><button id="speichern" type="button">Auswahl speichern</button><button id="finalisieren" type="button">Catering-Auswahl übermitteln</button><div id="speicherstatus" role="status"></div></div></header>
+<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div><div id="auswahlzaehler"><strong>Ihre Auswahl</strong><div id="auswahlmengen">Auswahl wird geladen ...</div><button id="speichern" type="button">Auswahl speichern</button><button id="finalisieren" type="button">Catering-Auswahl übermitteln</button><div id="speicherstatus" role="status"></div></div></header>
 <main><p id="deadline"></p><div id="categories"></div></main>
 <script>
 const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft");
@@ -63,8 +63,8 @@ async function load(){
   container.append(section);
  }
  $("auswahlzaehler").hidden=false;
- $("speichern").hidden=!editable;
- $("finalisieren").hidden=!editable;
+ $("speichern").disabled=!editable;
+ $("finalisieren").disabled=!editable;
  $("speichern").onclick=()=>save(false);
  $("finalisieren").onclick=()=>save(true);
  updateCount();
