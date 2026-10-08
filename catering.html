@@ -53,10 +53,10 @@ async function load(){
   section.append(heading);
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
   const entries=(data.items||[]).filter(item=>item.category===key);
-  if((key==="fingerfood"||key==="canapes"||key==="dessert"||key==="geschirr"||key==="mobiliar"||key==="tischwaesche") && catalog.some(item=>item.category===key)){
+  if((key==="fingerfood"||key==="canapes"||key==="dessert"||key==="geschirr"||key==="mobiliar"||key==="tischwaesche"||key==="personal") && catalog.some(item=>item.category===key)){
    for(const choice of catalog.filter(item=>item.category===key)){
     const saved=entries.find(item=>item.item_name===choice.name);
-    addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0},true);
+    addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0,notes:saved?.notes||""},true,key==="personal");
    }
   }else{
    for(const item of entries)addRow(rows,item);
@@ -74,13 +74,19 @@ async function load(){
  $("finalisieren").onclick=()=>save(true);
  updateCount();
 }
-function addRow(rows,item={},fixed=false){
+function addRow(rows,item={},fixed=false,personnel=false){
  const box=document.createElement("div");box.className="item";
  const name=document.createElement("input");name.placeholder="Artikel / Sorte";name.value=item.item_name||"";
  name.style.flex="1";name.maxLength=160;name.disabled=fixed||!editable;
  const qty=document.createElement("input");qty.type="number";qty.min="0";qty.max="100000";qty.step="1";
  qty.value=item.quantity||0;qty.disabled=!editable;qty.setAttribute("aria-label","Menge");
- if(fixed){const title=document.createElement("span");title.textContent=item.item_name;box.append(title,qty);box.dataset.name=item.item_name;}else{box.append(name,qty)}rows.append(box);
+ if(fixed){const title=document.createElement("span");title.textContent=item.item_name;box.append(title,qty);box.dataset.name=item.item_name;}else{box.append(name,qty)}
+ if(personnel){
+  const from=document.createElement("input");from.type="time";from.setAttribute("aria-label","Beginn");from.value=(item.notes||"").match(/von (\\d{2}:\\d{2})/)?.[1]||"";from.disabled=!editable;
+  const until=document.createElement("input");until.type="time";until.setAttribute("aria-label","Ende");until.value=(item.notes||"").match(/bis (\\d{2}:\\d{2})/)?.[1]||"";until.disabled=!editable;
+  const label=document.createElement("small");label.textContent="von / bis";box.append(label,from,until);
+ }
+ rows.append(box);
  qty.addEventListener("input",updateCount);
 }
 function updateCount(){
@@ -98,7 +104,15 @@ async function save(finalize=false){
    if(!name||!Number.isInteger(qty)||qty<0||qty>100000){
     $("speicherstatus").textContent="Bitte Artikel und gültige Mengen angeben.";return;
    }
-   if(qty>0)items.push({category:section.dataset.category,item_name:name,quantity:qty});
+   if(qty>0){
+    let notes="";
+    if(section.dataset.category==="personal"){
+     const times=row.querySelectorAll('input[type="time"]');
+     if(times.length!==2||!times[0].value||!times[1].value){$("speicherstatus").textContent="Bitte beim Personal Beginn und Ende eintragen.";return;}
+     notes="von "+times[0].value+" bis "+times[1].value;
+    }
+    items.push({category:section.dataset.category,item_name:name,quantity:qty,notes});
+   }
   }
  }
  $("speichern").disabled=true;$("finalisieren").disabled=true;$("speicherstatus").textContent="Auswahl wird gespeichert ...";
