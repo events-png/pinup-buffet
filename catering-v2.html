@@ -24,7 +24,7 @@ const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_pu
 const token=new URLSearchParams(location.search).get("token");
 const $=id=>document.getElementById(id);
 const categories={
- "canapes":"Canapés","fingerfood":"Fingerfood","dessert":"Desserts",
+ "canapes":"Canapés","fingerfood":"Fingerfood","dessert":"Dessert im Glas",
  "geschirr":"Geschirr & Besteck","mobiliar":"Mobiliar",
  "tischwaesche":"Tischwäsche","personal":"Personal"
 };
@@ -53,7 +53,7 @@ async function load(){
   section.append(heading);
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
   const entries=(data.items||[]).filter(item=>item.category===key);
-  if((key==="fingerfood"||key==="canapes") && catalog.some(item=>item.category===key)){
+  if((key==="fingerfood"||key==="canapes"||key==="dessert") && catalog.some(item=>item.category===key)){
    for(const choice of catalog.filter(item=>item.category===key)){
     const saved=entries.find(item=>item.item_name===choice.name);
     addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0},true);
