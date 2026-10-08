@@ -53,7 +53,7 @@ async function load(){
   section.append(heading);
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
   const entries=(data.items||[]).filter(item=>item.category===key);
-  if(key==="fingerfood" && catalog.some(item=>item.category===key)){
+  if((key==="fingerfood"||key==="canapes") && catalog.some(item=>item.category===key)){
    for(const choice of catalog.filter(item=>item.category===key)){
     const saved=entries.find(item=>item.item_name===choice.name);
     addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0},true);
