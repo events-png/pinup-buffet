@@ -39,9 +39,9 @@ async function load(){
  const catalog= catalogResponse.error ? [] : (catalogResponse.data||[]);
  $("event").textContent=data.customer_name+" · "+fmtDate(data.event_date)+" · "+data.guest_count+" Personen";
  const until=new Date(data.editable_until);
- editable=Number.isFinite(until.getTime())&&Date.now()<=until.getTime();
+ editable=data.status==='open'&&Number.isFinite(until.getTime())&&Date.now()<=until.getTime();
  $("deadline").textContent="Änderungsfrist: "+(data.editable_until?until.toLocaleString("de-DE"):"nicht verfügbar")+
-  (editable?" · Sie können die Auswahl bis dahin ändern.":" · Die Auswahl ist abgeschlossen.");
+  (data.status==="finalized"?" · Verbindlich übermittelt. Keine weiteren Änderungen möglich.":editable?" · Sie können die Auswahl bis dahin ändern.":" · Die Auswahl ist abgeschlossen.");
  const container=$("categories");
  for(const key of data.categories||[]){
   const section=document.createElement("section");
@@ -97,7 +97,7 @@ async function save(finalize=false){
   }
  }
  $("speichern").disabled=true;$("finalisieren").disabled=true;$("speicherstatus").textContent="Auswahl wird gespeichert ...";
- if(finalize&&!confirm("Möchten Sie Ihre Catering-Auswahl übermitteln? Änderungen sind bis zur angezeigten Frist weiterhin möglich.")){$("speichern").disabled=false;$("finalisieren").disabled=false;return;}
+ if(finalize&&!confirm("Möchten Sie Ihre Catering-Auswahl übermitteln? Danach sind keine Änderungen mehr möglich, auch wenn die 14-Tage-Frist noch nicht erreicht ist.")){$("speichern").disabled=false;$("finalisieren").disabled=false;return;}
  const result=await db.rpc("save_catering_by_token",{p_token:token,p_items:items});
  if(!result.error&&finalize){
   const submitted=await db.rpc("submit_catering_by_token",{p_token:token});
@@ -105,7 +105,8 @@ async function save(finalize=false){
  }
  $("speichern").disabled=false;$("finalisieren").disabled=false;
  $("speicherstatus").textContent=result.error?"Speichern/Übermitteln nicht möglich: "+result.error.message:
-  (finalize?"Ihre Catering-Auswahl wurde übermittelt.":"Ihre Auswahl wurde gespeichert.")+" Sie können sie bis zum Fristablauf erneut bearbeiten.";
+  (finalize?"Ihre Catering-Auswahl wurde verbindlich übermittelt. Änderungen sind jetzt nicht mehr möglich.":"Ihre Auswahl wurde gespeichert. Sie können sie bis zum Fristablauf erneut bearbeiten.");
+ if(!result.error&&finalize){editable=false;document.querySelectorAll("#categories input, #categories button").forEach(el=>el.disabled=true);$("speichern").disabled=true;$("finalisieren").disabled=true;$("deadline").textContent="Catering-Auswahl verbindlich übermittelt · Keine weiteren Änderungen möglich.";}
 }
 load();
 </script>
