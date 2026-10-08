@@ -6,19 +6,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f7f7f7;color:#222}
-header{background:#fff;border-bottom:3px solid #fbbf24;padding:14px;text-align:center}
+header{position:sticky;top:0;background:#fff;border-bottom:3px solid #fbbf24;padding:10px 18px;text-align:center;z-index:5;box-shadow:0 2px 8px #0001}
 h1{font-size:24px;margin:0 0 8px}main{max-width:850px;margin:auto;padding:15px 20px 60px}
 h2{font-size:18px;border-bottom:2px solid #fbbf24;padding-bottom:8px;margin-top:26px}
 .item{display:flex;gap:10px;align-items:center;background:#fff;padding:10px;border:1px solid #ddd;border-radius:6px;margin:7px 0}
 .item span{flex:1}input{padding:8px;border:1px solid #aaa;border-radius:5px}
 input[type=number]{width:90px}button{background:#fbbf24;border:0;padding:11px 20px;border-radius:6px;cursor:pointer;font-weight:bold}
 button:disabled,input:disabled{opacity:.55;cursor:not-allowed}#status{padding:10px 0}
-small{color:#555}@media(max-width:600px){main{padding:12px}h1{font-size:20px}}
+small{color:#555}#auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px auto 0;border-radius:8px;max-width:850px;border:1px solid #fbbf24;line-height:1.45}#speichern,#finalisieren{margin-top:7px;padding:8px 18px}#finalisieren{background:#222;color:#fff;margin-left:6px}#speicherstatus{margin-top:6px;font-weight:bold}#speichern:disabled,#finalisieren:disabled{opacity:.5}@media(max-width:600px){main{padding:12px}h1{font-size:20px}}
 </style>
 </head>
 <body>
-<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div></header>
-<main><p id="deadline"></p><div id="categories"></div><button id="save" hidden>Auswahl speichern und übermitteln</button><p id="status" role="status"></p></main>
+<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div><div id="auswahlzaehler" hidden><strong>Ihre Auswahl</strong><div id="auswahlmengen"></div><button id="speichern" type="button">Auswahl speichern</button><button id="finalisieren" type="button">Catering-Auswahl übermitteln</button><div id="speicherstatus" role="status"></div></div></header>
+<main><p id="deadline"></p><div id="categories"></div></main>
 <script>
 const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft");
 const token=new URLSearchParams(location.search).get("token");
@@ -62,8 +62,12 @@ async function load(){
   }
   container.append(section);
  }
- $("save").hidden=!editable;
- $("save").onclick=save;
+ $("auswahlzaehler").hidden=false;
+ $("speichern").hidden=!editable;
+ $("finalisieren").hidden=!editable;
+ $("speichern").onclick=()=>save(false);
+ $("finalisieren").onclick=()=>save(true);
+ updateCount();
 }
 function addRow(rows,item={},fixed=false){
  const box=document.createElement("div");box.className="item";
@@ -72,8 +76,14 @@ function addRow(rows,item={},fixed=false){
  const qty=document.createElement("input");qty.type="number";qty.min="0";qty.max="100000";qty.step="1";
  qty.value=item.quantity||0;qty.disabled=!editable;qty.setAttribute("aria-label","Menge");
  if(fixed){const title=document.createElement("span");title.textContent=item.item_name;box.append(title,qty);box.dataset.name=item.item_name;}else{box.append(name,qty)}rows.append(box);
+ qty.addEventListener("input",updateCount);
 }
-async function save(){
+function updateCount(){
+ let count=0,positions=0;
+ document.querySelectorAll("#categories input[type=number]").forEach(input=>{const quantity=Number(input.value)||0;if(quantity>0){count+=quantity;positions++}});
+ $("auswahlmengen").textContent=positions+" Positionen · "+count+" Stück/Einheiten";
+}
+async function save(finalize=false){
  const items=[];
  for(const section of document.querySelectorAll("[data-category]")){
   for(const row of section.querySelectorAll(".item")){
@@ -81,16 +91,17 @@ async function save(){
    const qty=Number((row.dataset.name?inputs[0]:inputs[1]).value);
    if(!name&&!qty)continue;
    if(!name||!Number.isInteger(qty)||qty<0||qty>100000){
-    $("status").textContent="Bitte Artikel und gültige Mengen angeben.";return;
+    $("speicherstatus").textContent="Bitte Artikel und gültige Mengen angeben.";return;
    }
    if(qty>0)items.push({category:section.dataset.category,item_name:name,quantity:qty});
   }
  }
- $("save").disabled=true;$("status").textContent="Auswahl wird gespeichert ...";
+ $("speichern").disabled=true;$("finalisieren").disabled=true;$("status").textContent="Auswahl wird gespeichert ...";
+ if(finalize&&!confirm("Möchten Sie Ihre Catering-Auswahl übermitteln? Änderungen sind bis zur angezeigten Frist weiterhin möglich.")){$("speichern").disabled=false;$("finalisieren").disabled=false;return;}
  const result=await db.rpc("save_catering_by_token",{p_token:token,p_items:items});
- $("save").disabled=false;
+ $("speichern").disabled=false;$("finalisieren").disabled=false;
  $("status").textContent=result.error?"Speichern nicht möglich: "+result.error.message:
-  "Ihre Auswahl wurde gespeichert. Sie können sie bis zum Fristablauf erneut bearbeiten.";
+  (finalize?"Ihre Catering-Auswahl wurde übermittelt.":"Ihre Auswahl wurde gespeichert.")+" Sie können sie bis zum Fristablauf erneut bearbeiten.";
 }
 load();
 </script>
