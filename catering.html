@@ -99,8 +99,12 @@ async function save(finalize=false){
  $("speichern").disabled=true;$("finalisieren").disabled=true;$("speicherstatus").textContent="Auswahl wird gespeichert ...";
  if(finalize&&!confirm("Möchten Sie Ihre Catering-Auswahl übermitteln? Änderungen sind bis zur angezeigten Frist weiterhin möglich.")){$("speichern").disabled=false;$("finalisieren").disabled=false;return;}
  const result=await db.rpc("save_catering_by_token",{p_token:token,p_items:items});
+ if(!result.error&&finalize){
+  const submitted=await db.rpc("submit_catering_by_token",{p_token:token});
+  if(submitted.error){result.error=submitted.error;}
+ }
  $("speichern").disabled=false;$("finalisieren").disabled=false;
- $("speicherstatus").textContent=result.error?"Speichern nicht möglich: "+result.error.message:
+ $("speicherstatus").textContent=result.error?"Speichern/Übermitteln nicht möglich: "+result.error.message:
   (finalize?"Ihre Catering-Auswahl wurde übermittelt.":"Ihre Auswahl wurde gespeichert.")+" Sie können sie bis zum Fristablauf erneut bearbeiten.";
 }
 load();
