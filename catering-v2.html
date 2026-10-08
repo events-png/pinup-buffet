@@ -78,8 +78,8 @@ function addRow(rows,item={},fixed=false,personnel=false){
  qty.value=item.quantity||0;qty.disabled=!editable;qty.setAttribute("aria-label","Menge");
  if(fixed){const title=document.createElement("span");title.textContent=item.item_name;box.append(title,qty);box.dataset.name=item.item_name;}else{box.append(name,qty)}
  if(personnel){
-  const from=document.createElement("input");from.type="time";from.setAttribute("aria-label","Beginn");from.value=(item.notes||"").match(/von (\\d{2}:\\d{2})/)?.[1]||"";from.disabled=!editable;
-  const until=document.createElement("input");until.type="time";until.setAttribute("aria-label","Ende");until.value=(item.notes||"").match(/bis (\\d{2}:\\d{2})/)?.[1]||"";until.disabled=!editable;
+  const from=document.createElement("input");from.type="time";from.setAttribute("aria-label","Beginn");from.value=(item.notes||"").match(/von (\d{2}:\d{2})/)?.[1]||"";from.disabled=!editable;
+  const until=document.createElement("input");until.type="time";until.setAttribute("aria-label","Ende");until.value=(item.notes||"").match(/bis (\d{2}:\d{2})/)?.[1]||"";until.disabled=!editable;
   const label=document.createElement("small");label.textContent="von / bis";box.append(label,from,until);
  }
  rows.append(box);
