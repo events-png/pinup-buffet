@@ -61,10 +61,6 @@ async function load(){
   }else{
    for(const item of entries)addRow(rows,item);
   }
-  if(editable && key!=="fingerfood"){
-   const btn=document.createElement("button");btn.type="button";btn.textContent="Position hinzufügen";
-   btn.onclick=()=>addRow(rows);section.append(btn);
-  }
   container.append(section);
  }
  $("auswahlzaehler").hidden=false;
