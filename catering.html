@@ -13,11 +13,11 @@ h2{font-size:18px;border-bottom:2px solid #fbbf24;padding-bottom:8px;margin-top:
 .item span{flex:1}input{padding:8px;border:1px solid #aaa;border-radius:5px}
 input[type=number]{width:90px}button{background:#fbbf24;border:0;padding:11px 20px;border-radius:6px;cursor:pointer;font-weight:bold}
 button:disabled,input:disabled{opacity:.55;cursor:not-allowed}#status{padding:10px 0}
-small{color:#555}#auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px auto 0;border-radius:8px;max-width:850px;border:1px solid #fbbf24;line-height:1.45}#speichern,#finalisieren{margin-top:7px;padding:8px 18px}#finalisieren{background:#222;color:#fff;margin-left:6px}#speicherstatus{margin-top:6px;font-weight:bold}#speichern:disabled,#finalisieren:disabled{opacity:.5}@media(max-width:600px){main{padding:12px}h1{font-size:20px}}
+small{color:#555}#auswahlzaehler{background:#fff8df;padding:9px 12px;margin:8px auto 0;border-radius:8px;max-width:850px;border:1px solid #fbbf24;line-height:1.45}#speichern,#finalisieren{margin-top:7px;padding:8px 18px}#finalisieren{background:#222;color:#fff;margin-left:6px}#speicherstatus{margin-top:6px;font-weight:bold}#speichern:disabled,#finalisieren:disabled{opacity:.5}#preisuebersicht{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #e2c773}#preisuebersicht>div{font-size:12px}#preisuebersicht strong{display:block;font-size:17px}#preishinweis{font-size:12px;color:#6b5321;margin-top:5px}@media(max-width:600px){#preisuebersicht strong{font-size:14px}}@media(max-width:600px){main{padding:12px}h1{font-size:20px}}
 </style>
 </head>
 <body>
-<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div><div id="auswahlzaehler"><strong>Ihre Auswahl</strong><div id="auswahlmengen">Auswahl wird geladen ...</div><button id="speichern" type="button">Auswahl speichern</button><button id="finalisieren" type="button">Catering-Auswahl übermitteln</button><div id="speicherstatus" role="status"></div></div></header>
+<header><h1>pin-up Catering-Auswahl</h1><div id="event">Anfrage wird geladen ...</div><div id="auswahlzaehler"><strong>Ihre Auswahl</strong><div id="auswahlmengen">Auswahl wird geladen ...</div><div id="preisuebersicht" hidden><div>Angebot<strong id="preisalt">–</strong></div><div>Aktuelle Auswahl<strong id="preisneu">–</strong></div><div>Änderung<strong id="preisdifferenz">–</strong></div></div><div id="preishinweis"></div><button id="speichern" type="button">Auswahl speichern</button><button id="finalisieren" type="button">Catering-Auswahl übermitteln</button><div id="speicherstatus" role="status"></div></div></header>
 <main><p id="deadline"></p><div id="categories"></div></main>
 <script>
 const db=supabase.createClient("https://gfhvecfpdfftfkidlfjc.supabase.co","sb_publishable_jB82z-cp1ZCZdZRdaRBBig_QA1d4mft");
@@ -28,7 +28,7 @@ const categories={
  "geschirr":"Geschirr & Besteck","mobiliar":"Mobiliar",
  "tischwaesche":"Tischwäsche","personal":"Personal"
 };
-let data=null,editable=false;
+let data=null,editable=false;const eur=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"});
 const fmtDate=d=>d?new Date(d+"T12:00:00").toLocaleDateString("de-DE"):"-";
 async function load(){
  if(!token){$("event").textContent="Kein gültiger Auswahl-Link.";return}
@@ -51,12 +51,18 @@ async function load(){
    note.textContent=key==="dessert"?"Mindestbestellmenge: 30 Portionen | Mindestens 10 Portionen pro Sorte":"Mindestbestellmenge: 30 Stück | Mindestens 10 Stück pro Sorte";heading.append(note);
   }
   section.append(heading);
+  const baselineLine=(data.offer_baseline?.lines||[]).find(line=>({fingerfood:"Fingerfood",canapes:"Canapés",dessert:"Extra Dessert"})[key]===line.name);
+  if(baselineLine&&["fingerfood","canapes","dessert"].includes(key)){
+   const proposal=document.createElement("p");proposal.className="vorschlag";proposal.textContent="Unser Mengenvorschlag: "+baselineLine.quantity+" "+(key==="dessert"?"Portionen":"Stück")+" – bitte auf die Sorten verteilen.";
+   section.append(proposal);
+  }
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
   const entries=(data.items||[]).filter(item=>item.category===key);
   if((key==="fingerfood"||key==="canapes"||key==="dessert"||key==="geschirr"||key==="mobiliar"||key==="tischwaesche"||key==="personal") && catalog.some(item=>item.category===key)){
    for(const choice of catalog.filter(item=>item.category===key)){
     const saved=entries.find(item=>item.item_name===choice.name);
-    addRow(rows,{item_name:choice.name,quantity:saved?.quantity||0,notes:saved?.notes||""},true,key==="personal");
+    const initial=(data.offer_baseline?.lines||[]).find(line=>line.name===choice.name)?.quantity||0;
+    addRow(rows,{item_name:choice.name,quantity:saved?.quantity??(entries.length?0:initial),notes:saved?.notes||""},true,key==="personal");
    }
   }else{
    for(const item of entries)addRow(rows,item);
@@ -84,11 +90,61 @@ function addRow(rows,item={},fixed=false,personnel=false){
  }
  rows.append(box);
  qty.addEventListener("input",updateCount);
+ box.querySelectorAll('input[type="time"]').forEach(input=>input.addEventListener("input",updateCount));
 }
 function updateCount(){
  let count=0,positions=0;
  document.querySelectorAll("#categories input[type=number]").forEach(input=>{const quantity=Number(input.value)||0;if(quantity>0){count+=quantity;positions++}});
  $("auswahlmengen").textContent=positions+" Positionen · "+count+" Stück/Einheiten";
+ const baseline=data?.offer_baseline;
+ $("preisuebersicht").hidden=!baseline;
+ if(!baseline){$("preishinweis").textContent="Für diesen älteren Link liegen keine ursprünglichen Angebotspreise vor.";return}
+ const original=Number(baseline.total);
+ if(!Number.isFinite(original)){$("preisuebersicht").hidden=true;return}
+ const lines=baseline.lines||[];
+ const prices={"Buffet-Teller":.30,"Suppen-Teller":.30,"Dessert-Schalen":.30,"Buffet-Gabel":.30,"Buffet-Messer":.30,"Buffet-Löffel":.30,"Dessert-Löffel":.30,"Buffet-Tisch [200 x 80cm]":19.90,"Bankett-Tisch [180 x 80cm]":19.90,"Bankett-Stuhl [schwarz gepolstert]":3,"Gasgrill":49.90,"Cocktailbar inkl. Equipment":149.90,"Tischdecke Buffet-Tisch":4.50,"Tischdecke Bankett-Tisch":5,"Husse Bankett-Stuhl [weiss]":4.50};
+ const foodNames={fingerfood:"Fingerfood",canapes:"Canapés",dessert:"Extra Dessert"};
+ const foodPrices={fingerfood:3.50,canapes:3.30,dessert:4};
+ let delta=0,unknown=false,pending=[];
+ for(const section of document.querySelectorAll("[data-category]")){
+  const category=section.dataset.category;
+  const selected=[...section.querySelectorAll(".item")].map(row=>({
+    name:row.dataset.name||row.querySelector("input")?.value||"",
+    qty:Number(row.querySelector('input[type="number"]')?.value)||0,
+    times:[...row.querySelectorAll('input[type="time"]')].map(x=>x.value)
+  }));
+  if(foodNames[category]){
+   const old=lines.find(line=>line.name===foodNames[category]);
+   const qty=selected.reduce((n,item)=>n+item.qty,0);
+   if(!qty&&old?.quantity>0){pending.push(categories[category]);continue}
+   delta+=(qty-(Number(old?.quantity)||0))*(Number(old?.unitPrice)||foodPrices[category]);
+  }else{
+   for(const item of selected){
+    const old=lines.find(line=>line.name===item.name);
+    const unit=old?Number(old.unitPrice):prices[item.name];
+    if(category==="personal"){
+     if(!item.qty&&!old)continue;
+     if(!Number.isFinite(unit)){unknown=true;continue}
+     const duration=times=>{
+      if(times.length!==2||!times[0]||!times[1])return null;
+      const mins=v=>{const [h,m]=v.split(":").map(Number);return h*60+m};
+      let diff=mins(times[1])-mins(times[0]);if(diff<0)diff+=1440;
+      return diff>0?diff/60:null;
+     };
+     const hrs=duration(item.times);
+     if(item.qty>0&&hrs===null){unknown=true;continue}
+     delta+=item.qty*(hrs||0)*unit-(Number(old?.quantity)||0)*(Number(old?.hours)||0)*unit;
+    }else{
+     if(!Number.isFinite(unit)){if(item.qty)unknown=true;continue}
+     delta+=(item.qty-(Number(old?.quantity)||0))*unit;
+    }
+   }
+  }
+ }
+ $("preisalt").textContent=eur.format(original);
+ $("preisneu").textContent=unknown?"Nach Prüfung":eur.format(original+delta);
+ $("preisdifferenz").textContent=unknown?"–":(delta>0?"+":"")+eur.format(delta);
+ $("preishinweis").textContent=unknown?"Für einige Positionen fehlt ein Preis oder eine Personalzeit. Die Gesamtsumme wird nach Prüfung bestätigt.":pending.length?"Noch nicht auf Sorten verteilt: "+pending.join(", ")+". Bis dahin bleibt die angebotene Menge in der Berechnung.":"Bruttopreise einschließlich der angebotenen Leistungen; maßgeblich ist die abschließende Bestätigung.";
 }
 async function save(finalize=false){
  const items=[];
