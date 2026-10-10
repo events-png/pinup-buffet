@@ -62,7 +62,10 @@ async function load(){
    for(const choice of catalog.filter(item=>item.category===key)){
     const saved=entries.find(item=>item.item_name===choice.name);
     const initial=(data.offer_baseline?.lines||[]).find(line=>line.name===choice.name)?.quantity||0;
-    addRow(rows,{item_name:choice.name,quantity:saved?.quantity??(entries.length?0:initial),notes:saved?.notes||""},true,key==="personal");
+    const baselineDetail=(data.offer_baseline?.lines||[]).find(line=>line.name===choice.name)?.detail||"";
+    const proposedTimes=baselineDetail.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    const notes=saved?.notes||(proposedTimes?"von "+proposedTimes[1]+" bis "+proposedTimes[2]:"");
+    addRow(rows,{item_name:choice.name,quantity:saved?.quantity??(entries.length?0:initial),notes},true,key==="personal");
    }
   }else{
    for(const item of entries)addRow(rows,item);
