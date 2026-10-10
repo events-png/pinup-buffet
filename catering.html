@@ -46,9 +46,9 @@ async function load(){
  for(const key of data.categories||[]){
   const section=document.createElement("section");
   const heading=document.createElement("h2");heading.textContent=categories[key]||key;
-  if(key==="canapes"||key==="fingerfood"){
+  if(key==="canapes"||key==="fingerfood"||key==="dessert"){
    const note=document.createElement("small");note.style.cssText="display:inline-block;margin-left:14px;font-size:13px;font-weight:normal;line-height:1.4;vertical-align:middle";
-   note.textContent="Mindestbestellmenge: 30 Stück | Mindestens 10 Stück pro Sorte";heading.append(note);
+   note.textContent=key==="dessert"?"Mindestbestellmenge: 30 Portionen | Mindestens 10 Portionen pro Sorte":"Mindestbestellmenge: 30 Stück | Mindestens 10 Stück pro Sorte";heading.append(note);
   }
   section.append(heading);
   const rows=document.createElement("div");rows.dataset.category=key;section.append(rows);
